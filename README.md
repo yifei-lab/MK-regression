@@ -44,7 +44,7 @@ in which the first two columns are binary indicators of interspecies divergence 
 
 ### Model fitting
 
-**Step** 0: You can obtain the augments of the MK regression.
+**Step** 0: You can obtain the arguments of the MK regression.
 ```
 python MKRegression.py --help
 ```
