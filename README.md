@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-The MK regression is a hybrid of the McDonald-Kreitman (MK) test and the generalized linear regression to infer genomic features responsible for positive selection. Unlike previous MK-based methods that can only analyze one genomic feature at a time, the MK regression can analyze multiple genomic features simultaneously to disentangle direct and indirect effects on the rate of adaptation (ω<sub>α</sub> ).
+The MK regression is a hybrid of the McDonald-Kreitman (MK) test and the generalized linear regression to infer genomic features responsible for positive selection. Unlike previous MK-based methods that can only analyze one genomic feature at a time, the MK regression can analyze multiple genomic features simultaneously to disentangle direct and indirect effects on the rate of adaptation (ω<sub>α</sub>).
 
 ## Requirements
 
