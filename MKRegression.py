@@ -236,8 +236,8 @@ if __name__ == '__main__':
     parser.add_argument("-p", dest="parameter_file", type=str, required=True,
                         help="output file of estimated parameters")
 
-    parser.add_argument("-o", dest="omega_alpha_file", type=str, required=False,
-                        help="output file of site-wise omega alpha (optional)")
+    parser.add_argument("-o", dest="omega_a_file", type=str, required=False,
+                        help="output file of site-wise omega_a (optional)")
 
     args = parser.parse_args()
 
@@ -280,6 +280,6 @@ if __name__ == '__main__':
 
     df.to_csv(args.parameter_file, sep='\t', index=False)
 
-    if args.omega_alpha_file is not None:
-        df = pd.DataFrame.from_dict({'omega_alpha': est_omega_alpha})
-        df.to_csv(args.omega_alpha_file, sep='\t', index=False)
+    if args.omega_a_file is not None:
+        df = pd.DataFrame.from_dict({'omega_a': est_omega_alpha})
+        df.to_csv(args.omega_a_file, sep='\t', index=False)

@@ -56,7 +56,7 @@ optional arguments:
   -n NEUTRAL_FILE      input file of neutral sites
   -f FOREGROUND_FILE   input file of functional sites
   -p PARAMETER_FILE    output file of estimated parameters
-  -o OMEGA_ALPHA_FILE  output file of site-wise omega alpha (optional)
+  -o OMEGA_A_FILE  output file of site-wise omega_a (optional)
 ```
 
 **Step** 1: As an example, you may obtain compressed input files for the MK regression paper from [Penn State's ScholarSphere](https://scholarsphere.psu.edu/resources/409ab824-65cf-40de-97e5-fc22dce9ad64). 
