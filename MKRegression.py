@@ -234,10 +234,13 @@ if __name__ == '__main__':
                         help="input file of functional sites")
 
     parser.add_argument("-p", dest="parameter_file", type=str, required=True,
-                        help="output file of estimated parameters")
+                        help="output file of estimated coefficients for omega_a")
 
     parser.add_argument("-o", dest="omega_a_file", type=str, required=False,
                         help="output file of site-wise omega_a (optional)")
+
+    parser.add_argument("-g", dest="gamma_file", type=str, required=False,
+                        help="output file of other estimated parameters (optional)")
 
     args = parser.parse_args()
 
@@ -269,16 +272,30 @@ if __name__ == '__main__':
 
     res, est_omega_alpha = regression_model.fit()
 
+    # regression coefficient (beta)
     para_names = ['intercept']
     para_names += [x + '_coeff' for x in foreground_data.columns[2:]]
     df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
-                                              ('estimate', res.x[2:feature.shape[1] + 3]),
-                                              ('se', res.se[2:feature.shape[1] + 3]),
-                                              ('z-score', res.z[2:feature.shape[1] + 3]),
-                                              ('p-value', res.pvalue[2:feature.shape[1] + 3]),
-                                              ]))
+                                             ('estimate', res.x[2:feature.shape[1] + 3]),
+                                             ('se', res.se[2:feature.shape[1] + 3]),
+                                             ('z-score', res.z[2:feature.shape[1] + 3]),
+                                             ('p-value', res.pvalue[2:feature.shape[1] + 3]),
+                                            ]))
 
     df.to_csv(args.parameter_file, sep='\t', index=False)
+
+    # regression coefficient (gamma)
+    if args.gamma_file is not None:
+        para_names = ['gamma_intercept']
+        para_names += [x + '_gamma_coeff' for x in foreground_data.columns[2:]]
+        df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
+                                                 ('estimate', res.x[feature.shape[1] + 3:]),
+                                                 ('se', res.se[feature.shape[1] + 3:]),
+                                                 ('z-score', res.z[feature.shape[1] + 3:]),
+                                                 ('p-value', res.pvalue[feature.shape[1] + 3:]),
+                                                ]))
+
+        df.to_csv(args.gamma_file, sep='\t', index=False)
 
     if args.omega_a_file is not None:
         df = pd.DataFrame.from_dict({'omega_a': est_omega_alpha})
