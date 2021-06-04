@@ -240,7 +240,7 @@ if __name__ == '__main__':
                         help="output file of site-wise omega_a (optional)")
 
     parser.add_argument("-g", dest="gamma_file", type=str, required=False,
-                        help="output file of other estimated parameters (optional)")
+                        help="output file of estimated coefficients for polymorphic rate (optional)")
 
     args = parser.parse_args()
 
