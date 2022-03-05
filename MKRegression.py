@@ -242,6 +242,9 @@ if __name__ == '__main__':
     parser.add_argument("-g", dest="gamma_file", type=str, required=False,
                         help="output file of estimated coefficients for polymorphic rate (optional)")
 
+    parser.add_argument("-m", dest="model", type=str, required=False,
+                        help="model variables, as a list of column names, 'all' (default), or an empty list for the null model (intercept only)")
+
     args = parser.parse_args()
 
     neutral_input_file = args.neutral_file
@@ -249,14 +252,25 @@ if __name__ == '__main__':
     neutral_data = pd.read_csv(neutral_input_file, sep='\t')
     foreground_data = pd.read_csv(foreground_input_file, sep='\t')
 
+    if args.model is None:
+        args.model = 'all'
+
     assert neutral_data.shape[1] == 2, 'The neutral file must have two columns.'
-    assert foreground_data.shape[1] > 2, 'The foreground file must have more than two columns.'
+    assert foreground_data.shape[1] >= 2, 'The foreground file must have more than two columns.'
 
     neutral_div = neutral_data.iloc[:, 0].values
     neutral_poly = neutral_data.iloc[:, 1].values
     foreground_div = foreground_data.iloc[:, 0].values
     foreground_poly = foreground_data.iloc[:, 1].values
-    feature = foreground_data.iloc[:, 2:].values
+    if args.model == 'null':
+        variables = []
+        feature = foreground_data[[]].values
+    elif args.model == 'all':
+        variables = foreground_data.columns[2:] 
+        feature = foreground_data.iloc[:, 2:].values
+    else:
+        variables = args.model.split(',')
+        feature = foreground_data[variables].values
 
     check_binary(neutral_div, 'neutral div')
     check_binary(neutral_poly, 'neutral poly')
@@ -274,7 +288,7 @@ if __name__ == '__main__':
 
     # regression coefficient (beta)
     para_names = ['intercept']
-    para_names += [x + '_coeff' for x in foreground_data.columns[2:]]
+    para_names += [x + '_coeff' for x in variables]
     df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
                                              ('estimate', res.x[2:feature.shape[1] + 3]),
                                              ('se', res.se[2:feature.shape[1] + 3]),
@@ -287,7 +301,7 @@ if __name__ == '__main__':
     # regression coefficient (gamma)
     if args.gamma_file is not None:
         para_names = ['gamma_intercept']
-        para_names += [x + '_gamma_coeff' for x in foreground_data.columns[2:]]
+        para_names += [x + '_gamma_coeff' for x in variables]
         df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
                                                  ('estimate', res.x[feature.shape[1] + 3:]),
                                                  ('se', res.se[feature.shape[1] + 3:]),
