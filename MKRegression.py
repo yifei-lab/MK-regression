@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import optimize, stats
 from collections import OrderedDict
 import argparse
+import math
 
 
 # likelihood function for MK test
@@ -242,6 +243,12 @@ if __name__ == '__main__':
     parser.add_argument("-g", dest="gamma_file", type=str, required=False,
                         help="output file of estimated coefficients for polymorphic rate (optional)")
 
+    parser.add_argument("-m", dest="model", type=str, required=False, default='all',
+                        help="model variables, as a list of column names, 'all' (default), or an empty list for the null model (intercept only)")
+
+    parser.add_argument("-r", dest="compute_r2", required=False, default=False, action='store_true',
+                        help="compute lielihood-based partial R2")
+
     args = parser.parse_args()
 
     neutral_input_file = args.neutral_file
@@ -250,13 +257,21 @@ if __name__ == '__main__':
     foreground_data = pd.read_csv(foreground_input_file, sep='\t')
 
     assert neutral_data.shape[1] == 2, 'The neutral file must have two columns.'
-    assert foreground_data.shape[1] > 2, 'The foreground file must have more than two columns.'
+    assert foreground_data.shape[1] >= 2, 'The foreground file must have more than two columns.'
 
     neutral_div = neutral_data.iloc[:, 0].values
     neutral_poly = neutral_data.iloc[:, 1].values
     foreground_div = foreground_data.iloc[:, 0].values
     foreground_poly = foreground_data.iloc[:, 1].values
-    feature = foreground_data.iloc[:, 2:].values
+    if args.model == 'null':
+        variables = []
+        feature = foreground_data[[]].values
+    elif args.model == 'all':
+        variables = foreground_data.columns[2:] 
+        feature = foreground_data.iloc[:, 2:].values
+    else:
+        variables = args.model.split(',')
+        feature = foreground_data[variables].values
 
     check_binary(neutral_div, 'neutral div')
     check_binary(neutral_poly, 'neutral poly')
@@ -274,7 +289,7 @@ if __name__ == '__main__':
 
     # regression coefficient (beta)
     para_names = ['intercept']
-    para_names += [x + '_coeff' for x in foreground_data.columns[2:]]
+    para_names += [x + '_coeff' for x in variables]
     df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
                                              ('estimate', res.x[2:feature.shape[1] + 3]),
                                              ('se', res.se[2:feature.shape[1] + 3]),
@@ -287,7 +302,7 @@ if __name__ == '__main__':
     # regression coefficient (gamma)
     if args.gamma_file is not None:
         para_names = ['gamma_intercept']
-        para_names += [x + '_gamma_coeff' for x in foreground_data.columns[2:]]
+        para_names += [x + '_gamma_coeff' for x in variables]
         df = pd.DataFrame.from_dict(OrderedDict([('parameter', para_names),
                                                  ('estimate', res.x[feature.shape[1] + 3:]),
                                                  ('se', res.se[feature.shape[1] + 3:]),
@@ -300,3 +315,28 @@ if __name__ == '__main__':
     if args.omega_a_file is not None:
         df = pd.DataFrame.from_dict({'omega_a': est_omega_alpha})
         df.to_csv(args.omega_a_file, sep='\t', index=False)
+
+    # compute partial R2
+    if args.compute_r2:
+        print("Fitting null model to estimate R2...")
+        assert args.model != 'null', 'partial R2 cannot be computed for the null model.'
+        logLk1 = res.fun
+
+        feature0 = foreground_data[[]].values
+        regression_model0 = SimpleMKRegression(neutral_div,
+                                              neutral_poly,
+                                              foreground_div,
+                                              foreground_poly,
+                                              feature0)
+
+        res0, est_omega_alpha0 = regression_model0.fit()
+        logLk0 = res0.fun
+        
+        n = float(foreground_data.shape[0])
+        logLkMax = 1. - math.exp((2./n) * logLk0)
+        r2 = 1. - math.exp(-(2./n) * (logLk1 - logLk0))
+        r2n = r2 / logLkMax
+
+        print('Partial (normalized) R2 = {}'.format(r2n))
+
+
