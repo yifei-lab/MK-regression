@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import optimize, stats
 from collections import OrderedDict
 import argparse
+import math
 
 
 # likelihood function for MK test
@@ -242,8 +243,11 @@ if __name__ == '__main__':
     parser.add_argument("-g", dest="gamma_file", type=str, required=False,
                         help="output file of estimated coefficients for polymorphic rate (optional)")
 
-    parser.add_argument("-m", dest="model", type=str, required=False,
+    parser.add_argument("-m", dest="model", type=str, required=False, default='all',
                         help="model variables, as a list of column names, 'all' (default), or an empty list for the null model (intercept only)")
+
+    parser.add_argument("-r", dest="compute_r2", required=False, default=False, action='store_true',
+                        help="compute lielihood-based partial R2")
 
     args = parser.parse_args()
 
@@ -251,9 +255,6 @@ if __name__ == '__main__':
     foreground_input_file = args.foreground_file
     neutral_data = pd.read_csv(neutral_input_file, sep='\t')
     foreground_data = pd.read_csv(foreground_input_file, sep='\t')
-
-    if args.model is None:
-        args.model = 'all'
 
     assert neutral_data.shape[1] == 2, 'The neutral file must have two columns.'
     assert foreground_data.shape[1] >= 2, 'The foreground file must have more than two columns.'
@@ -314,3 +315,28 @@ if __name__ == '__main__':
     if args.omega_a_file is not None:
         df = pd.DataFrame.from_dict({'omega_a': est_omega_alpha})
         df.to_csv(args.omega_a_file, sep='\t', index=False)
+
+    # compute partial R2
+    if args.compute_r2:
+        print("Fitting null model to estimate R2...")
+        assert args.model != 'null', 'partial R2 cannot be computed for the null model.'
+        logLk1 = res.fun
+
+        feature0 = foreground_data[[]].values
+        regression_model0 = SimpleMKRegression(neutral_div,
+                                              neutral_poly,
+                                              foreground_div,
+                                              foreground_poly,
+                                              feature0)
+
+        res0, est_omega_alpha0 = regression_model0.fit()
+        logLk0 = res0.fun
+        
+        n = float(foreground_data.shape[0])
+        logLkMax = 1. - math.exp((2./n) * logLk0)
+        r2 = 1. - math.exp(-(2./n) * (logLk1 - logLk0))
+        r2n = r2 / logLkMax
+
+        print('Partial (normalized) R2 = {}'.format(r2n))
+
+
